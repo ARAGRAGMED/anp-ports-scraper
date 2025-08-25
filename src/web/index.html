@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANP Ports Vessel Scraper Dashboard</title>
+    
+    <!-- Tabler CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css" rel="stylesheet">
+    <!-- Tabler Icons - Multiple CDN fallbacks -->
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons@2.40.0/iconfont/tabler-icons.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/@tabler/icons@2.40.0/iconfont/tabler-icons.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.40.0/iconfont/tabler-icons.min.css" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        .vessel-type-badge {
+            background-color: #206bc4;
+            color: white;
+        }
+        .operator-badge {
+            background-color: #d63939;
+            color: white;
+        }
+        .port-badge {
+            background-color: #2fb344;
+            color: white;
+        }
+        .situation-badge {
+            background-color: #f59f00;
+            color: white;
+        }
+        .loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-active { background-color: #2fb344; }
+        .status-inactive { background-color: #d63939; }
+        .status-unknown { background-color: #f59f00; }
+        
+        /* Fallback icons if Tabler Icons don't load */
+        .icon-fallback {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            background-color: currentColor;
+            mask-size: contain;
+            mask-repeat: no-repeat;
+            mask-position: center;
+        }
+        
+        .icon-ship {
+            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 21c-1.39 0-2.78-.47-4-1.32-2.44 1.71-5.56 1.71-8 0C6.78 20.53 5.39 21 4 21H2v2h2c1.38 0 2.74-.35 4-.99 2.52 1.29 5.48 1.29 8 0 1.26.65 2.62.99 4 .99h2v-2h-2zM3.95 19H4c1.6 0 3.02-.88 4-2 .98 1.12 2.4 2 4 2s3.02-.88 4-2c.98 1.12 2.4 2 4 2h.05l1.89-6.68c.08-.26.06-.54-.06-.78s-.34-.42-.6-.5L20 10.62V6c0-1.1-.9-2-2-2h-3V1H9v2H6c-1.1 0-2 .9-2 2v4.62l-1.29.42c-.26.08-.48.26-.6.5s-.15.52-.06.78L3.95 19zM6 6h12v3.97L12 8 6 9.97V6z'/%3E%3C/svg%3E");
+        }
+        
+        .icon-refresh {
+            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z'/%3E%3C/svg%3E");
+        }
+        
+        .icon-download {
+            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z'/%3E%3C/svg%3E");
+        }
+        
+        .icon-trash {
+            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z'/%3E%3C/svg%3E");
+        }
+
+        .badge {
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <!-- Header -->
+        <header class="navbar navbar-expand-md navbar-light d-print-none">
+            <div class="container-xl">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+                    <a href=".">
+                        🚢 ANP Ports Vessel Scraper
+                    </a>
+                </h1>
+                <div class="navbar-nav flex-row order-md-last">
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown">
+                            <span class="avatar avatar-sm">
+                                <i class="ti ti-ship"></i>
+                            </span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                            <a href="#" class="dropdown-item" onclick="updateData()">
+                                <i class="ti ti-refresh me-2"></i> Update Now
+                            </a>
+                            <a href="#" class="dropdown-item" onclick="exportCSV()">
+                                <i class="ti ti-download me-2"></i> Export CSV
+                            </a>
+                            <a href="#" class="dropdown-item" onclick="cleanDuplicates()">
+                                <i class="ti ti-trash me-2"></i> Clean Duplicates
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="page-wrapper">
+            <div class="container-xl">
+                <!-- Page Header -->
+                <div class="page-header d-print-none">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h2 class="page-title">Vessel Movement Dashboard</h2>
+                            <div class="text-muted mt-1">Monitor Moroccan port activities and vessel movements</div>
+                        </div>
+                        <div class="col-auto ms-auto d-print-none">
+                            <div class="btn-list">
+                                <button class="btn btn-primary" onclick="updateData()">
+                                    <i class="ti ti-refresh me-2"></i>Update Data
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="exportCSV()">
+                                    <i class="ti ti-download me-2"></i>Export CSV
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="row row-deck row-cards mb-4">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="subheader">Total Vessels</div>
+                                </div>
+                                <div class="h1 mb-3" id="total-vessels">-</div>
+                                <div class="d-flex mb-2">
+                                    <div>Last Update: <span id="last-update">-</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="subheader">Active Vessels</div>
+                                </div>
+                                <div class="h1 mb-3" id="active-vessels">-</div>
+                                <div class="d-flex mb-2">
+                                    <div>In Port: <span id="in-port-count">-</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="subheader">Vessel Types</div>
+                                </div>
+                                <div class="h1 mb-3" id="vessel-types-count">-</div>
+                                <div class="d-flex mb-2">
+                                    <div>Most Common: <span id="most-common-type">-</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="subheader">Status</div>
+                                </div>
+                                <div class="h1 mb-3" id="system-status">-</div>
+                                <div class="d-flex mb-2">
+                                    <div>API: <span id="api-status">-</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3 class="card-title">Filters</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label class="form-label">Start Date</label>
+                                <input type="date" class="form-control" id="start-date">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">End Date</label>
+                                <input type="date" class="form-control" id="end-date">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Vessel Type</label>
+                                <select class="form-select" id="vessel-type-filter">
+                                    <option value="">All Types</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Operator</label>
+                                <select class="form-select" id="operator-filter">
+                                    <option value="">All Operators</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Port</label>
+                                <select class="form-select" id="port-filter">
+                                    <option value="">All Ports</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Search</label>
+                                <input type="text" class="form-control" id="search-filter" placeholder="Search vessels...">
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <button class="btn btn-primary me-2" onclick="applyFilters()">
+                                    <i class="ti ti-search me-2"></i>Apply Filters
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="clearFilters()">
+                                    <i class="ti ti-x me-2"></i>Clear
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="row row-deck row-cards mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Vessel Types Distribution</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="vessel-types-chart" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Top Operators</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="operators-chart" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Vessel Data</h3>
+                        <div class="card-actions">
+                            <span class="badge bg-primary" id="results-count">0 results</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-vcenter card-table" id="vessels-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nom du navire</th>
+                                        <th>Type Navire</th>
+                                        <th>Situation</th>
+                                        <th>Date</th>
+                                        <th>Heure</th>
+                                        <th>Provenance</th>
+                                        <th>Consignataire</th>
+                                        <th>Opérateur de manutention</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vessels-tbody">
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted">
+                                            <i class="ti ti-ship me-2"></i>Aucun navire trouvé
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+</html>
