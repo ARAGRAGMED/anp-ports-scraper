@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+e#!/usr/bin/env python3
 """
 Baltic Exchange Weekly Market Roundup Scraper
 Main script to run the Baltic Exchange scraper and collect market data.

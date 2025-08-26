@@ -55,26 +55,6 @@ python3 run_baltic_scraper.py --export-csv
 python3 run_baltic_scraper.py --stats-only
 ```
 
-### **Vercel Deployment**
-
-```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy to Vercel
-./deploy.sh
-
-# Or deploy manually
-vercel --prod
-```
-
-**Deployment Features:**
-- 🚀 **Zero-config deployment** with Vercel
-- 📱 **Static file serving** for fast dashboard loading
-- 🔧 **Python 3.9 runtime** for optimal performance
-- 🌐 **Global CDN** for worldwide access
-- 📊 **Automatic scaling** based on traffic
-
 ### **Programmatic Usage**
 
 ```python

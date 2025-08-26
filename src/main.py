@@ -53,18 +53,18 @@ data_dir = Path(__file__).parent.parent / "data"
 scraper = BalticExchangeScraper(data_dir=str(data_dir))
 api_client = BalticExchangeAPIClient()
 
-# Mount static files for Vercel
-static_dir = Path(__file__).parent.parent / "static"
-if static_dir.exists():
-    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
-    print(f"Static directory mounted at /static: {static_dir}")
+# Mount static files
+web_dir = Path(__file__).parent / "web"
+if web_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(web_dir)), name="static")
+    print(f"Web directory mounted at /static: {web_dir}")
 else:
-    print(f"Warning: Static directory not found: {static_dir}")
+    print(f"Warning: Web directory not found: {web_dir}")
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_dashboard():
     """Serve the main dashboard HTML."""
-    html_file = static_dir / "index.html"
+    html_file = web_dir / "index.html"
     if html_file.exists():
         with open(html_file, 'r', encoding='utf-8') as f:
             return HTMLResponse(content=f.read())
@@ -74,7 +74,7 @@ async def serve_dashboard():
             <head><title>Baltic Exchange Scraper</title></head>
             <body>
                 <h1>Baltic Exchange Scraper Dashboard</h1>
-                <p>Dashboard files not found. Please check the static directory.</p>
+                <p>Dashboard files not found. Please check the web directory.</p>
                 <p><a href="/docs">API Documentation</a></p>
             </body>
         </html>
@@ -240,6 +240,3 @@ async def test_connection():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
-# Vercel handler
-app.debug = False
