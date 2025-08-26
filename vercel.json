@@ -2,29 +2,36 @@
   "version": 2,
   "builds": [
     {
-      "src": "src/main.py",
+      "src": "api/index.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/",
-      "dest": "/src/web/index.html"
+      "dest": "/static/index.html"
     },
     {
       "src": "/api/(.*)",
-      "dest": "src/main.py"
+      "dest": "/api/index.py"
+    },
+    {
+      "src": "/docs",
+      "dest": "/api/index.py"
+    },
+    {
+      "src": "/redoc",
+      "dest": "/api/index.py"
+    },
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/src/web/$1"
+      "dest": "/api/index.py"
     }
   ],
-  "functions": {
-    "src/main.py": {
-      "runtime": "python3.9"
-    }
-  },
   "env": {
     "PYTHONPATH": "src"
   }
