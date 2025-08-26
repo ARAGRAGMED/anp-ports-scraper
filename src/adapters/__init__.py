@@ -1,3 +1,3 @@
 """
-ANP API adapters for data fetching and processing.
+Baltic Exchange API adapters for data fetching and processing.
 """

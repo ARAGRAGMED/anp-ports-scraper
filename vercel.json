@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "name": "anp-ports-vessel-scraper",
   "builds": [
     {
       "src": "src/main.py",
@@ -9,16 +8,24 @@
   ],
   "routes": [
     {
-      "src": "/(.*)",
+      "src": "/",
+      "dest": "/src/web/index.html"
+    },
+    {
+      "src": "/api/(.*)",
       "dest": "src/main.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/src/web/$1"
     }
   ],
-  "env": {
-    "VERCEL_ENV": "production"
-  },
   "functions": {
     "src/main.py": {
-      "maxDuration": 30
+      "runtime": "python3.9"
     }
+  },
+  "env": {
+    "PYTHONPATH": "src"
   }
 }

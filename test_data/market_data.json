@@ -1,0 +1,40 @@
+[
+  {
+    "scraped_at": "2025-08-26T13:01:40.942138",
+    "source_url": "https://www.balticexchange.com/en/data-services/WeeklyRoundup.html",
+    "bdi": {
+      "current_value": null,
+      "change": null,
+      "change_percentage": null,
+      "date": null,
+      "components": {}
+    },
+    "p5": {
+      "routes": {},
+      "summary": {}
+    },
+    "bulk_rates": {
+      "capesize": {},
+      "panamax": {},
+      "supramax": {},
+      "handysize": {},
+      "summary": {}
+    },
+    "market_summary": {
+      "market_sentiment": null,
+      "key_highlights": [],
+      "trends": []
+    },
+    "raw_content": {
+      "page_title": null,
+      "main_content": null
+    },
+    "data_quality": {
+      "bdi_complete": false,
+      "p5_complete": false,
+      "bulk_rates_complete": false,
+      "has_market_summary": false
+    },
+    "data_age_hours": 3.1027777777777777e-07
+  }
+]

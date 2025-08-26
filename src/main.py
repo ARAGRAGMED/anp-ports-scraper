@@ -1,8 +1,9 @@
 """
-ANP Ports Vessel Scraper - FastAPI Application
-Main web application for the ANP ports vessel monitoring system.
+Baltic Exchange Scraper - FastAPI Application
+Main web application for the Baltic Exchange market monitoring system.
 """
 
+import json
 import logging
 import os
 from datetime import datetime
@@ -15,24 +16,27 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 try:
-    from .scraper import ANPPortsVesselScraper
-    from .matcher import ANPPortsVesselMatcher
-    from .adapters.anp_api import ANPAPIClient
+    from .baltic_exchange_scraper import BalticExchangeScraper
+    from .adapters.baltic_exchange_api import BalticExchangeAPIClient
 except ImportError:
     # Fallback for direct execution
-    from scraper import ANPPortsVesselScraper
-    from matcher import ANPPortsVesselMatcher
-    from adapters.anp_api import ANPAPIClient
+    from baltic_exchange_scraper import BalticExchangeScraper
+    from adapters.baltic_exchange_api import BalticExchangeAPIClient
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Suppress verbose logs from adapters to reduce noise
+logging.getLogger("adapters.baltic_exchange_api").setLevel(logging.WARNING)
+
 # Initialize FastAPI app
 app = FastAPI(
-    title="ANP Ports Vessel Scraper API",
-    description="API for scraping and analyzing ANP vessel movement data",
-    version="1.0.0"
+    title="Baltic Exchange Scraper API",
+    description="API for scraping and analyzing Baltic Exchange weekly market data",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
 # Add CORS middleware
@@ -46,32 +50,31 @@ app.add_middleware(
 
 # Initialize scraper with correct data directory
 data_dir = Path(__file__).parent.parent / "data"
-scraper = ANPPortsVesselScraper(data_dir=str(data_dir))
-matcher = ANPPortsVesselMatcher()
-api_client = ANPAPIClient()
+scraper = BalticExchangeScraper(data_dir=str(data_dir))
+api_client = BalticExchangeAPIClient()
 
-# Mount static files
-web_dir = Path(__file__).parent / "web"
-if web_dir.exists():
-    app.mount("/static", StaticFiles(directory=str(web_dir)), name="static")
-    print(f"Web directory mounted at /static: {web_dir}")
+# Mount static files for Vercel
+static_dir = Path(__file__).parent.parent / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+    print(f"Static directory mounted at /static: {static_dir}")
 else:
-    print(f"Warning: Web directory not found: {web_dir}")
+    print(f"Warning: Static directory not found: {static_dir}")
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_dashboard():
     """Serve the main dashboard HTML."""
-    html_file = web_dir / "index.html"
+    html_file = static_dir / "index.html"
     if html_file.exists():
         with open(html_file, 'r', encoding='utf-8') as f:
             return HTMLResponse(content=f.read())
     else:
         return HTMLResponse(content="""
         <html>
-            <head><title>ANP Ports Vessel Scraper</title></head>
+            <head><title>Baltic Exchange Scraper</title></head>
             <body>
-                <h1>ANP Ports Vessel Scraper Dashboard</h1>
-                <p>Dashboard files not found. Please check the web directory.</p>
+                <h1>Baltic Exchange Scraper Dashboard</h1>
+                <p>Dashboard files not found. Please check the static directory.</p>
                 <p><a href="/docs">API Documentation</a></p>
             </body>
         </html>
@@ -82,7 +85,7 @@ async def health_check():
     """Health check endpoint."""
     return {
         "status": "healthy", 
-        "service": "ANP Ports Vessel Scraper", 
+        "service": "Baltic Exchange Scraper", 
         "platform": "FastAPI",
         "version": "1.0.0",
         "timestamp": datetime.now().isoformat()
@@ -92,233 +95,148 @@ async def health_check():
 async def get_dashboard_data(
     start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
-    vessel_type: Optional[str] = Query(None, description="Vessel type filter"),
-    operator: Optional[str] = Query(None, description="Operator filter"),
-    port: Optional[str] = Query(None, description="Port filter"),
-    situation: Optional[str] = Query(None, description="Situation filter"),
-    search: Optional[str] = Query(None, description="Search term"),
     limit: Optional[int] = Query(100, description="Maximum number of results")
 ):
-    """Get filtered dashboard data."""
+    """Get filtered dashboard data from local JSON file."""
     try:
-        # Build filters
-        filters = {}
-        if start_date:
-            filters['start_date'] = start_date
-        if end_date:
-            filters['end_date'] = end_date
-        if vessel_type:
-            filters['vessel_type'] = vessel_type
-        if operator:
-            filters['operator'] = operator
-        if port:
-            filters['port'] = port
-        if situation:
-            filters['situation'] = situation
-        if search:
-            filters['search'] = search
+        # Read data directly from JSON file instead of calling scraper
+        json_file_path = data_dir / "market_data.json"
         
-        # Get vessels with filters
-        vessels = scraper.get_vessels(filters)
+        if not json_file_path.exists():
+            return {
+                "status": "success",
+                "data": [],
+                "summary": {
+                    "latest_update": None,
+                    "total_weekly_reports": 0,
+                    "data_structure": "weekly_reports"
+                }
+            }
+        
+        # Read and parse JSON file
+        with open(json_file_path, 'r', encoding='utf-8') as f:
+            all_data = json.loads(f.read())
+        
+        # Apply date filtering if provided
+        if start_date or end_date:
+            filtered_data = []
+            for entry in all_data:
+                entry_date = datetime.fromisoformat(entry['scraped_at'].replace('Z', '+00:00'))
+                
+                if start_date:
+                    start_dt = datetime.fromisoformat(start_date)
+                    if entry_date < start_dt:
+                        continue
+                
+                if end_date:
+                    end_dt = datetime.fromisoformat(end_date)
+                    if entry_date > end_dt:
+                        continue
+                
+                filtered_data.append(entry)
+        else:
+            filtered_data = all_data
         
         # Apply limit
-        if limit and limit > 0:
-            vessels = vessels[:limit]
+        if limit:
+            filtered_data = filtered_data[:limit]
         
-        # Get statistics
-        stats = scraper.get_statistics()
+        # Calculate summary statistics
+        latest_entry = filtered_data[0] if filtered_data else None
+        
+        # Count total weekly reports across all entries
+        total_weekly_reports = 0
+        if filtered_data:
+            for entry in filtered_data:
+                if entry.get('weekly_reports'):
+                    total_weekly_reports += len(entry['weekly_reports'])
         
         return {
             "status": "success",
-            "vessels": vessels,
-            "statistics": stats,
-            "filters_applied": filters,
-            "total_results": len(vessels),
-            "timestamp": datetime.now().isoformat()
+            "data": filtered_data,
+            "summary": {
+                "latest_update": latest_entry['scraped_at'] if latest_entry else None,
+                "total_weekly_reports": total_weekly_reports,
+                "data_structure": "weekly_reports"
+            }
         }
         
     except Exception as e:
         logger.error(f"Error getting dashboard data: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/update")
-async def update_vessel_data(force_update: bool = Query(False, description="Force update even if recent")):
-    """Trigger vessel data update from ANP API."""
+@app.post("/api/update-data")
+async def update_market_data():
+    """Trigger market data update."""
     try:
-        result = scraper.update_vessel_data(force_update=force_update)
-        return result
+        result = scraper.update_market_data(force_update=True)
+        return {
+            "status": "success",
+            "message": "Market data update triggered",
+            "result": result
+        }
     except Exception as e:
-        logger.error(f"Error updating vessel data: {e}")
+        logger.error(f"Error updating market data: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/statistics")
 async def get_statistics():
-    """Get vessel data statistics."""
+    """Get scraper statistics."""
     try:
         stats = scraper.get_statistics()
         return {
             "status": "success",
-            "statistics": stats,
-            "timestamp": datetime.now().isoformat()
+            "statistics": stats
         }
     except Exception as e:
         logger.error(f"Error getting statistics: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/vessels")
-async def get_vessels(
-    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
-    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
-    vessel_type: Optional[str] = Query(None, description="Vessel type filter"),
-    operator: Optional[str] = Query(None, description="Operator filter"),
-    port: Optional[str] = Query(None, description="Port filter"),
-    situation: Optional[str] = Query(None, description="Situation filter"),
-    search: Optional[str] = Query(None, description="Search term"),
-    limit: Optional[int] = Query(100, description="Maximum number of results")
-):
-    """Get vessels with optional filtering."""
+@app.get("/api/latest-data")
+async def get_latest_data():
+    """Get latest market data."""
     try:
-        filters = {}
-        if start_date:
-            filters['start_date'] = start_date
-        if end_date:
-            filters['end_date'] = end_date
-        if vessel_type:
-            filters['vessel_type'] = vessel_type
-        if operator:
-            filters['operator'] = operator
-        if port:
-            filters['port'] = port
-        if situation:
-            filters['situation'] = situation
-        if search:
-            filters['search'] = search
-        
-        vessels = scraper.get_vessels(filters)
-        
-        if limit and limit > 0:
-            vessels = vessels[:limit]
-        
+        latest_data = scraper.get_latest_data()
         return {
             "status": "success",
-            "vessels": vessels,
-            "total_results": len(vessels),
-            "filters_applied": filters,
-            "timestamp": datetime.now().isoformat()
+            "data": latest_data
         }
-        
     except Exception as e:
-        logger.error(f"Error getting vessels: {e}")
+        logger.error(f"Error getting latest data: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/vessels/{vessel_id}")
-async def get_vessel(vessel_id: str):
-    """Get specific vessel by ID (escale number)."""
+@app.get("/api/export-csv")
+async def export_csv():
+    """Export data to CSV."""
     try:
-        vessels = scraper.get_vessels()
-        for vessel in vessels:
-            if str(vessel.get('nUMERO_ESCALEField', '')) == vessel_id:
-                return {
-                    "status": "success",
-                    "vessel": vessel,
-                    "timestamp": datetime.now().isoformat()
-                }
-        
-        raise HTTPException(status_code=404, detail="Vessel not found")
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error getting vessel {vessel_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/export/csv")
-async def export_csv(
-    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
-    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
-    vessel_type: Optional[str] = Query(None, description="Vessel type filter"),
-    operator: Optional[str] = Query(None, description="Operator filter"),
-    port: Optional[str] = Query(None, description="Port filter"),
-    situation: Optional[str] = Query(None, description="Situation filter"),
-    search: Optional[str] = Query(None, description="Search term")
-):
-    """Export vessels to CSV format."""
-    try:
-        filters = {}
-        if start_date:
-            filters['start_date'] = start_date
-        if end_date:
-            filters['end_date'] = end_date
-        if vessel_type:
-            filters['vessel_type'] = vessel_type
-        if operator:
-            filters['operator'] = operator
-        if port:
-            filters['port'] = port
-        if situation:
-            filters['situation'] = situation
-        if search:
-            filters['search'] = search
-        
-        csv_data = scraper.export_csv(filters)
-        
-        if not csv_data:
-            raise HTTPException(status_code=404, detail="No data to export")
-        
-        return JSONResponse(
-            content={"csv_data": csv_data},
-            media_type="application/json"
-        )
-        
-    except HTTPException:
-        raise
+        csv_data = scraper.export_csv()
+        if csv_data:
+            return JSONResponse(
+                content={"status": "success", "csv_data": csv_data},
+                media_type="application/json"
+            )
+        else:
+            return JSONResponse(
+                content={"status": "error", "message": "No data available for export"},
+                status_code=404
+            )
     except Exception as e:
         logger.error(f"Error exporting CSV: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/filter-options")
-async def get_filter_options():
-    """Get available filter options."""
-    try:
-        vessels = scraper.get_vessels()
-        options = matcher.get_filter_options(vessels)
-        
-        return {
-            "status": "success",
-            "filter_options": options,
-            "timestamp": datetime.now().isoformat()
-        }
-        
-    except Exception as e:
-        logger.error(f"Error getting filter options: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/clean-duplicates")
-async def clean_duplicates():
-    """Clean duplicate vessels from the database."""
-    try:
-        result = scraper.clean_duplicates()
-        return result
-    except Exception as e:
-        logger.error(f"Error cleaning duplicates: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.get("/api/test-connection")
 async def test_connection():
-    """Test connection to ANP API."""
+    """Test connection to Baltic Exchange."""
     try:
         result = scraper.test_connection()
-        return result
+        return {
+            "status": "success",
+            "connection_test": result
+        }
     except Exception as e:
         logger.error(f"Error testing connection: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
-    
-    # Check if we're running on Vercel
-    if os.environ.get('VERCEL_ENV'):
-        logger.info("Running on Vercel - using temporary data directory")
-        scraper = ANPPortsVesselScraper(data_dir="/tmp/data")
-    
     uvicorn.run(app, host="0.0.0.0", port=8000)

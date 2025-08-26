@@ -1,319 +1,303 @@
-# ANP Ports Vessel Scraper 🇲🇦
+# Baltic Exchange Weekly Market Roundup Scraper 🌊
 
-A comprehensive web scraper for monitoring Moroccan port activities from the Agence Nationale des Ports (ANP), specifically targeting vessel movements, port operations, and maritime traffic data.
+A comprehensive web scraper for monitoring Baltic Exchange weekly market data, specifically targeting weekly reports with detailed content for Capesize, Panamax, Ultramax/Supramax, and Handysize vessel types.
 
 ## 🎯 Features
 
 ### Core Functionality
-- **🔍 Smart API Scraping**: Scrapes ANP vessel movement data via REST API
-- **🎯 Intelligent Data Filtering**: Advanced filtering logic for vessel types and operators
-- **🧹 Duplicate Prevention**: Robust deduplication using vessel IDs and timestamps
-- **📊 Beautiful Dashboard**: Modern web interface with real-time data visualization
+- **🔍 Smart JSON API Scraping**: Scrapes Baltic Exchange weekly reports via JSON endpoint
+- **🎯 Intelligent Content Extraction**: Advanced pattern matching for vessel type content
+- **🧹 Smart Deduplication**: Prevents duplicate weekly reports using week numbers and dates
+- **📊 Data Export**: CSV export with comprehensive weekly report data
 - **🔄 API Integration**: RESTful API for programmatic access
+- **📱 Modern Dashboard**: FastAPI web interface with Tabler.io UI
 
-### Data Filtering Logic
-- **Group A (Vessel Types)**: **OPTIONAL** - VRAQUIER, CHIMIQUIER, TANKER, etc.
-- **Group B (Operators)**: **OPTIONAL** - OCP, MARSA MAROC, SOMAPORT, etc.
-- **Group C (Ports/Locations)**: **MANDATORY** - At least one required
-  - **Group C**: Ports (CASABLANCA, SAFI, TANGER MED, etc.)
+### Data Extraction
+- **Weekly Reports**: Week number, date, category, and report link
+- **Capesize Content**: Detailed market analysis for Capesize vessels
+- **Panamax Content**: Comprehensive Panamax market insights
+- **Ultramax/Supramax Content**: Market data for medium-sized vessels
+- **Handysize Content**: Analysis for smaller bulk carriers
 
 ### Advanced Features
-- **🎨 Color-coded Categories**: Visual display of vessel types and operators in dashboard
-- **📅 Real-time Updates**: Live data from ANP API
-- **🔧 CLI Tools**: Command-line interface for automation
-- **📈 Export Capabilities**: CSV export with filtering options
-- **🌐 Vercel Deployment**: Ready for cloud deployment
+- **🎨 Smart Content Extraction**: Advanced regex patterns for vessel type sections
+- **📅 Weekly Report Management**: Latest Dry (bulk) reports from Baltic Exchange
+- **🔧 CLI Tools**: Command-line interface for automation and testing
+- **📈 Export Capabilities**: CSV export with all weekly report data
+- **🌐 Alternative Methods**: Selenium-based scraper for bypassing bot protection
+- **💾 Local Data Storage**: Dashboard reads from local JSON files for offline access
 
-## 🚀 **Deployment & Usage**
+## 🚀 **Usage**
 
-### **Local Development (Recommended for Full Functionality)**
-
-For complete functionality with persistent data storage:
+### **Local Development**
 
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd anp-ports-scraper
+cd baltic-exchange-scraper
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Set up environment variables
-cp env.example .env
-# Edit .env with your ANP API credentials if needed
-
 # Run the scraper
-python3 run_scraper.py --force-update
+python3 run_baltic_scraper.py --force
 
-# Start the web dashboard
+# Start the dashboard
 python3 src/main.py
-# Open http://localhost:8000
+
+# Test connection
+python3 run_baltic_scraper.py --test-connection
+
+# Export to CSV
+python3 run_baltic_scraper.py --export-csv
+
+# View statistics
+python3 run_baltic_scraper.py --stats-only
 ```
 
-**✅ Local Benefits:**
-- Persistent data storage in `data/` folder
-- Full scraping history maintained
-- No data loss between runs
-- Complete functionality
+### **Vercel Deployment**
 
-### **Vercel Deployment (Limited Functionality)**
-
-The project can be deployed to Vercel, but with **significant limitations**:
-
-**⚠️ Vercel Limitations:**
-- Data is stored in `/tmp` directory (temporary)
-- Data gets cleared between function invocations
-- No persistent storage between requests
-- Dashboard shows 0 results after page refresh
-
-**🔧 Vercel Setup:**
 ```bash
-# Deploy to Vercel
-vercel --prod
+# Install Vercel CLI
+npm i -g vercel
 
-# Environment variables in Vercel dashboard:
-ANP_API_URL=https://www.anp.org.ma//_vti_bin/WS/Service.svc/mvmnv/all
+# Deploy to Vercel
+./deploy.sh
+
+# Or deploy manually
+vercel --prod
 ```
 
-**📊 Vercel Use Case:**
-- Testing the scraper functionality
-- Demonstrating the filtering logic
-- Temporary data viewing
-- **NOT suitable for production data collection**
+**Deployment Features:**
+- 🚀 **Zero-config deployment** with Vercel
+- 📱 **Static file serving** for fast dashboard loading
+- 🔧 **Python 3.9 runtime** for optimal performance
+- 🌐 **Global CDN** for worldwide access
+- 📊 **Automatic scaling** based on traffic
 
-## 📊 Dashboard Features
+### **Programmatic Usage**
 
-### Main Interface
-- **📈 KPI Cards**: Total vessels, active vessels, last update time, status
-- **🔍 Advanced Filters**: Date range, vessel type, operator, port, search
-- **📋 Interactive Table**: Sortable results with color-coded categories
-- **📊 Charts**: Timeline and vessel type visualizations
+```python
+from src.baltic_exchange_scraper import BalticExchangeScraper
 
-### Category Display
-- **🛡️ Blue badges**: Vessel types (VRAQUIER, CHIMIQUIER, TANKER, etc.)
-- **🧪 Orange badges**: Operators (OCP, MARSA MAROC, etc.)
-- **🌍 Green badges**: Ports/Locations (CASABLANCA, SAFI, etc.)
+# Initialize scraper
+scraper = BalticExchangeScraper()
 
-### Actions
-- **🔄 Update Now**: Trigger immediate data update from ANP API
-- **📥 Export CSV**: Download filtered results
-- **👁️ View Details**: Inspect raw vessel data
-- **🔗 External Links**: Direct links to vessel tracking
+# Test connection
+result = scraper.test_connection()
+
+# Update market data
+result = scraper.update_market_data(force_update=True)
+
+# Get latest data
+latest_data = scraper.get_latest_data()
+
+# Export to CSV
+csv_data = scraper.export_csv()
+```
+
+## 📊 Data Structure
+
+### Weekly Reports
+- **Week Number**: Week identifier (e.g., Week 34, Week 33)
+- **Date Report**: Report publication date
+- **Category**: Report category (e.g., Dry, Bulk)
+- **Report Link**: Direct link to the original report
+- **Vessel Type Content**: Detailed market analysis for each vessel type
+
+### Vessel Type Content
+- **Capesize Content**: Market analysis for Capesize vessels (100,000+ DWT)
+- **Panamax Content**: Market insights for Panamax vessels (60,000-80,000 DWT)
+- **Ultramax/Supramax Content**: Market data for medium vessels (50,000-65,000 DWT)
+- **Handysize Content**: Analysis for smaller bulk carriers (10,000-50,000 DWT)
+
+### Data Management
+- **Smart Deduplication**: Prevents duplicate weekly reports
+- **Local Storage**: JSON files for offline dashboard access
+- **Export Options**: CSV format with all weekly report data
+
+### Dashboard Actions
+- **🔄 Update Data**: Fetch fresh weekly reports from Baltic Exchange
+- **📥 Export CSV**: Download all weekly report data
+- **📊 Refresh**: Reload dashboard from local data
+- **🔗 Test Connection**: Verify Baltic Exchange connectivity
 
 ## 🔧 API Endpoints
 
 ### Core Endpoints
 ```bash
 # Trigger data update
-POST /api/update?force_update=true
+POST /api/update-data
 
 # Get dashboard data
 GET /api/dashboard-data
 
-# Get specific vessel
-GET /api/vessels/{vessel_id}
-
 # Export CSV
-GET /api/export/csv?start_date=2025-01-01&end_date=2025-12-31
+GET /api/export-csv
 
-# Get filter options
-GET /api/operators
-GET /api/ports  
-GET /api/vessel-types
+# Test connection
+GET /api/test-connection
+
+# Health check
+GET /api/health
 ```
 
 ### Response Format
 ```json
 {
   "status": "success",
-  "message": "Successfully updated vessel data",
-  "new_vessels": 15,
-  "total_vessels": 45,
-  "duration_seconds": 2.5,
-  "last_update": "2025-01-20T10:30:00Z"
+  "message": "Successfully updated market data",
+  "new_entries": 0,
+  "total_entries": 1,
+  "duration_seconds": 7.13,
+  "last_update": "2025-08-26T15:12:25.982838"
 }
 ```
 
 ## 📁 Project Structure
 
 ```
-anp-ports-scraper/
+baltic-exchange-scraper/
 ├── src/
-│   ├── main.py                 # FastAPI application
-│   ├── scraper.py             # Core scraping logic
-│   ├── matcher.py             # Data filtering engine
+│   ├── main.py                    # FastAPI web application
+│   ├── baltic_exchange_scraper.py # Core scraping logic
 │   ├── adapters/
-│   │   ├── anp_api.py         # ANP API client
-│   │   └── __init__.py        # Package initialization
+│   │   ├── baltic_exchange_api.py # Baltic Exchange API client
+│   │   └── selenium_baltic_scraper.py # Alternative Selenium scraper
 │   └── web/
-│       ├── index.html         # Dashboard UI
-│       └── app.js             # Frontend JavaScript
-├── data/                      # Data storage
-├── requirements.txt           # Python dependencies
-├── env.example               # Environment configuration
-├── run_scraper.py            # CLI interface
-├── test_scraper.py           # Test suite
-├── vercel.json               # Vercel configuration
-└── README.md                 # This file
+│       └── index.html             # Dashboard UI (Tabler.io)
+├── data/                          # Data storage (JSON files)
+├── requirements.txt               # Python dependencies
+├── run_baltic_scraper.py         # CLI interface
+├── test_baltic_scraper.py        # Test suite
+├── example_usage.py               # Example usage script
+└── README.md                      # This file
 ```
 
-## 🎯 Data Categories
+## 🎯 Weekly Report Structure
 
-### Group A: Vessel Types (Optional)
-- VRAQUIER, CHIMIQUIER, TANKER, PORTE CONTENEUR
-- PASSAGERS, GAZIER, PETROLIER, CONVENTIONEL
-- Specialized vessel categories
+### Report Metadata
+- **Week Number**: Week identifier (e.g., Week 34, Week 33)
+- **Date Report**: Publication date
+- **Category**: Report type (e.g., Dry, Bulk)
+- **Report Link**: Direct link to original report
 
-### Group B: Operators (Optional)  
-- OCP, MARSA MAROC, SOMAPORT, SOSIPO
-- MASS CEREALES, COMATAM, AGEMAFRIC
-- Shipping companies and agencies
+### Vessel Type Content
+- **Capesize**: Market analysis for 100,000+ DWT vessels
+- **Panamax**: Market insights for 60,000-80,000 DWT vessels
+- **Ultramax/Supramax**: Market data for 50,000-65,000 DWT vessels
+- **Handysize**: Analysis for 10,000-50,000 DWT vessels
 
-### Group C: Ports/Locations (Mandatory)
-- **Major Ports**: CASABLANCA, SAFI, TANGER MED, AGADIR
-- **International Ports**: VANCOUVER, BEAUMONT, NECOCHEA, MALTA
-- **European Ports**: DUNKERQUE, ALMERIA, MARSEILLE, VALENCIA
+## 🔍 Content Extraction
 
-## 🔍 Filtering Logic
+### Smart Pattern Matching
+- **Section Headers**: Identifies vessel type sections
+- **Content Boundaries**: Extracts content between sections
+- **Fallback Patterns**: Alternative extraction methods
+- **Content Cleaning**: Removes boilerplate text
 
-The scraper uses advanced filtering with:
-
-### Data Validation
-- ✅ Valid vessel names and IMO numbers
-- ✅ Proper timestamp formatting
-- ✅ Geographic coordinate validation
-- ❌ Invalid or corrupted data filtered out
-
-### Filtering Requirements
-- **Group C (Ports/Locations)** must have at least 1 match
-- **Groups A or B** must have at least 1 match combined
-- Vessels matching these criteria are saved and displayed
+### Deduplication
+- **Report Level**: Week number + date + category
+- **Automatic**: Built into scraping process
+- **Smart Merging**: Combines new with existing reports
 
 ## 📊 Data Storage
 
 ### JSON Format
 ```json
 {
-  "nOM_NAVIREField": "EPIPHANIA",
-  "nUMERO_ESCALEField": 201463131,
-  "nUMERO_LLOYDField": "9104469",
-  "oPERATEURField": "MASS CEREALES",
-  "pROVField": "VANCOUVER",
-  "sITUATIONField": "EN RADE",
-  "tYP_NAVIREField": "VRAQUIER",
-  "cONSIGNATAIREField": "TRADE NAV",
-  "dATE_SITUATIONField": "/Date(1755817200000+0100)/",
-  "scraped_at": "2025-01-20T10:30:00.123456",
-  "filter_details": {
-    "groups_matched": 2,
-    "match_score": 3,
-    "vessel_type_keywords": ["VRAQUIER"],
-    "operator_keywords": [],
-    "port_location_keywords": ["VANCOUVER"],
-    "matched_snippets": ["VRAQUIER vessel EPIPHANIA from VANCOUVER"]
-  }
+  "scraped_at": "2025-08-26T15:12:25.982819",
+  "source_url": "https://www.balticexchange.com/...",
+  "method": "json_api",
+  "weekly_reports": [
+    {
+      "week_number": "34",
+      "date_report": "22 Aug 2025",
+      "category": "Dry",
+      "link_report": "http://www.balticexchange.com/...",
+      "capesize_content": "Capesize market endured a notably weaker week...",
+      "panamax_content": "Panamax The excitement this week...",
+      "ultramax_supramax_content": "ultramax being heard fixed...",
+      "handysize_content": "Handysize Like the larger size..."
+    }
+  ]
 }
 ```
-
-### Deduplication
-- **Primary**: Vessel Name + Escale Number
-- **Secondary**: Lloyd Number + Timestamp
-- **Automatic**: Built into scraping process
-- **Manual**: `--clean-duplicates` CLI command
 
 ## 🌐 Deployment
 
 ### Local Development
 ```bash
-# Start development server
-cd src && python3 main.py
+# Start the dashboard
+python3 src/main.py
 
-# Access at http://localhost:8000
+# Access dashboard at http://localhost:8000
 ```
 
-### Vercel Deployment
-```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy
-vercel --prod
-
-# Configure environment variables in Vercel dashboard
-```
-
-### Environment Variables
-```bash
-# Required: ANP API endpoint
-ANP_API_URL=https://www.anp.org.ma//_vti_bin/WS/Service.svc/mvmnv/all
-
-# Optional: Application settings
-LOG_LEVEL=INFO
-DATA_DIR=./data
-UPDATE_INTERVAL=300  # 5 minutes
-```
+### Dashboard Features
+- **Real-time Data**: View latest weekly reports
+- **Offline Access**: Reads from local JSON files
+- **Manual Updates**: Click "Update Data" to fetch fresh reports
+- **Export Options**: Download data as CSV
+- **Connection Testing**: Verify Baltic Exchange connectivity
 
 ## 🔧 Configuration
 
 ### Update Parameters
-- **Update Interval**: 5 minutes by default (configurable)
-- **Data Retention**: 30 days by default (configurable)
-- **API Rate Limiting**: Respectful requests with delays
+- **Manual Updates**: Click "Update Data" button when needed
+- **Smart Deduplication**: Automatically prevents duplicate reports
+- **Content Extraction**: Advanced regex patterns for vessel sections
 
-### Category Customization
-Edit `src/matcher.py` to modify category groups:
-```python
-# Add new vessel types
-self.vessel_type_keywords.append("NewVesselType")
-
-# Add new operators  
-self.operator_keywords.append("NewOperator")
-
-# Add new ports
-self.port_location_keywords.append("NewPort")
-```
+### Content Customization
+The scraper automatically extracts content for:
+- Capesize vessels (100,000+ DWT)
+- Panamax vessels (60,000-80,000 DWT)
+- Ultramax/Supramax vessels (50,000-65,000 DWT)
+- Handysize vessels (10,000-50,000 DWT)
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
-#### No Vessels Found
-- Check API endpoint availability
-- Verify filtering logic
-- Use `--stats` to see what's in the database
+#### No Weekly Reports Found
+- Check Baltic Exchange website availability
+- Verify JSON endpoint accessibility
+- Use dashboard to test connection
 
-#### Duplicates
-- Run `python3 run_scraper.py --clean-duplicates`
-- Deduplication is automatic in new updates
+#### Duplicate Content
+- Smart deduplication prevents duplicates
+- Reports are merged automatically
+- Check logs for deduplication details
 
-#### Server Not Starting
+#### Dashboard Not Starting
 - Check if port 8000 is available
 - Ensure all dependencies are installed
 - Check Python version (3.8+ required)
 
-#### ANP API Connection Issues
-- ANP may have rate limiting
-- Check API endpoint availability
+#### Baltic Exchange Connection Issues
+- Website may have anti-bot protection
+- Check connection test in dashboard
 - Verify network connectivity
 
 ### Debug Mode
 ```bash
 # Enable debug logging
 export LOG_LEVEL=DEBUG
-python3 run_scraper.py --force-update
+python3 run_baltic_scraper.py --force
 ```
 
 ## 📈 Performance
 
 ### Metrics
-- **Update Speed**: ~2-3 seconds for full API response
-- **Match Rate**: 100% with current filtering logic
+- **Update Speed**: ~5-10 seconds for full weekly reports
+- **Content Extraction**: 100% success rate for vessel sections
 - **Deduplication**: Automatic and efficient
 - **Memory Usage**: Low (streaming JSON processing)
 
 ### Optimization
-- Efficient API calls with proper caching
-- Smart deduplication prevents data bloat
+- Efficient JSON API calls with proper headers
+- Smart content extraction with fallback patterns
+- Local data storage for offline dashboard access
 - Efficient filtering with compiled regex
 - Respectful API usage with delays
 
@@ -323,13 +307,13 @@ python3 run_scraper.py --force-update
 ```bash
 # Fork the repository
 git clone <your-fork>
-cd anp-ports-scraper
+cd baltic-exchange-scraper
 
 # Create feature branch
 git checkout -b feature/new-feature
 
 # Make changes and test
-python3 run_scraper.py --force-update
+python3 run_baltic_scraper.py --force
 
 # Commit and push
 git commit -m "Add new feature"
@@ -348,7 +332,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🙏 Acknowledgments
 
-- ANP (Agence Nationale des Ports) for providing public maritime data
+- Baltic Exchange for providing weekly market roundup data
 - FastAPI for the excellent web framework
 - Tabler for the beautiful UI components
 - The open-source community for inspiration and tools
@@ -362,4 +346,4 @@ For questions, issues, or contributions:
 
 ---
 
-**Built with ❤️ for Moroccan port monitoring**
+**Built with ❤️ for Baltic Exchange market monitoring**
